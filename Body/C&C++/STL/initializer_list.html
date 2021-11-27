@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>future · Revery</title>
+        <title>initializer_list · Revery</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.3">
@@ -84,7 +84,7 @@
     <link rel="next" href="../Effective C++/Effective C++.html" />
     
     
-    <link rel="prev" href="filesystem.html" />
+    <link rel="prev" href="future.html" />
     
 
     </head>
@@ -332,7 +332,7 @@
                 <a href="toc.html">
             
                     
-                    组件
+                    STL
             
                 </a>
             
@@ -341,7 +341,20 @@
             <ul class="articles">
                 
     
-        <li class="chapter " data-level="3.4.1" data-path="filesystem.html">
+        <li class="chapter " data-level="3.4.1" data-path="attribute.html">
+            
+                <a href="attribute.html">
+            
+                    
+                    attribute
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.4.2" data-path="filesystem.html">
             
                 <a href="filesystem.html">
             
@@ -354,12 +367,25 @@
             
         </li>
     
-        <li class="chapter active" data-level="3.4.2" data-path="future.html">
+        <li class="chapter " data-level="3.4.3" data-path="future.html">
             
                 <a href="future.html">
             
                     
                     future
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="3.4.4" data-path="initializer_list.html">
+            
+                <a href="initializer_list.html">
+            
+                    
+                    initializer_list
             
                 </a>
             
@@ -501,7 +527,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href="../../.." >future</a>
+        <a href="../../.." >initializer_list</a>
     </h1>
 </div>
 
@@ -516,175 +542,66 @@
     
                                 <section class="normal markdown-section">
                                 
-                                <h1 id="future"><a name="future" class="anchor-navigation-ex-anchor" href="#future"><i class="fa fa-link" aria-hidden="true"></i></a>future</h1>
-<p><code>#include &lt;future&gt;</code></p>
-<h2 id="promise"><a name="promise" class="anchor-navigation-ex-anchor" href="#promise"><i class="fa fa-link" aria-hidden="true"></i></a><a href="https://zh.cppreference.com/w/cpp/thread/promise" target="_blank">promise</a></h2>
-<pre><code class="lang-c++">#include &lt;vector&gt;
-#include &lt;thread&gt;
-#include &lt;future&gt;
-#include &lt;numeric&gt;
-#include &lt;iostream&gt;
-#include &lt;chrono&gt;
-
-void accumulate(std::vector&lt;int&gt;::iterator first,
-                std::vector&lt;int&gt;::iterator last,
-                std::promise&lt;int&gt; accumulate_promise)
-{
-    int sum = std::accumulate(first, last, 0);
-    accumulate_promise.set_value(sum);  // &#x63D0;&#x9192; future
-}
-
-void do_work(std::promise&lt;void&gt; barrier)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    barrier.set_value();
-}
-
-int main()
-{
-    // &#x6F14;&#x793A;&#x7528; promise&lt;int&gt; &#x5728;&#x7EBF;&#x7A0B;&#x95F4;&#x4F20;&#x9012;&#x7ED3;&#x679C;&#x3002;
-    std::vector&lt;int&gt; numbers = { 1, 2, 3, 4, 5, 6 };
-    std::promise&lt;int&gt; accumulate_promise;
-    std::future&lt;int&gt; accumulate_future = accumulate_promise.get_future();
-    std::thread work_thread(accumulate, numbers.begin(), numbers.end(),
-                            std::move(accumulate_promise));
-
-    // future::get() &#x5C06;&#x7B49;&#x5F85;&#x76F4;&#x81F3;&#x8BE5; future &#x62E5;&#x6709;&#x5408;&#x6CD5;&#x7ED3;&#x679C;&#x5E76;&#x53D6;&#x5F97;&#x5B83;
-    // &#x65E0;&#x9700;&#x5728; get() &#x524D;&#x8C03;&#x7528; wait()
-    //accumulate_future.wait();  // &#x7B49;&#x5F85;&#x7ED3;&#x679C;
-    std::cout &lt;&lt; &quot;result=&quot; &lt;&lt; accumulate_future.get() &lt;&lt; &apos;\n&apos;;
-    work_thread.join();  // wait for thread completion
-
-    // &#x6F14;&#x793A;&#x7528; promise&lt;void&gt; &#x5728;&#x7EBF;&#x7A0B;&#x95F4;&#x5BF9;&#x72B6;&#x6001;&#x53D1;&#x4FE1;&#x53F7;
-    std::promise&lt;void&gt; barrier;
-    std::future&lt;void&gt; barrier_future = barrier.get_future();
-    std::thread new_work_thread(do_work, std::move(barrier));
-    barrier_future.wait();
-    new_work_thread.join();
-}
-</code></pre>
-<p>output:</p>
-<pre><code>result=21
-</code></pre><h2 id="packagedtask"><a name="packagedtask" class="anchor-navigation-ex-anchor" href="#packagedtask"><i class="fa fa-link" aria-hidden="true"></i></a><a href="https://zh.cppreference.com/w/cpp/thread/packaged_task" target="_blank">packaged_task</a></h2>
-<pre><code class="lang-c++">#include &lt;iostream&gt;
-#include &lt;cmath&gt;
-#include &lt;thread&gt;
-#include &lt;future&gt;
-#include &lt;functional&gt;
-
-int f(int x, int y) { return std::pow(x,y); }
-
-void task_lambda()
-{
-    std::packaged_task&lt;int(int,int)&gt; task([](int a, int b) {
-        return std::pow(a, b); 
-    });
-    std::future&lt;int&gt; result = task.get_future();
-
-    task(2, 9);
-
-    std::cout &lt;&lt; &quot;task_lambda:\t&quot; &lt;&lt; result.get() &lt;&lt; &apos;\n&apos;;
-}
-
-void task_bind()
-{
-    std::packaged_task&lt;int()&gt; task(std::bind(f, 2, 11));
-    std::future&lt;int&gt; result = task.get_future();
-
-    task();
-
-    std::cout &lt;&lt; &quot;task_bind:\t&quot; &lt;&lt; result.get() &lt;&lt; &apos;\n&apos;;
-}
-
-void task_thread()
-{
-    std::packaged_task&lt;int(int,int)&gt; task(f);
-    std::future&lt;int&gt; result = task.get_future();
-
-    std::thread task_td(std::move(task), 2, 10);
-    task_td.join();
-
-    std::cout &lt;&lt; &quot;task_thread:\t&quot; &lt;&lt; result.get() &lt;&lt; &apos;\n&apos;;
-}
-
-int main()
-{
-    task_lambda();
-    task_bind();
-    task_thread();
-}
-</code></pre>
-<p>output:</p>
-<pre><code>task_lambda: 512
-task_bind:   2048
-task_thread: 1024
-</code></pre><h2 id="async"><a name="async" class="anchor-navigation-ex-anchor" href="#async"><i class="fa fa-link" aria-hidden="true"></i></a><a href="https://zh.cppreference.com/w/cpp/thread/async" target="_blank">async</a></h2>
+                                <h1 id="initializerlist"><a name="initializerlist" class="anchor-navigation-ex-anchor" href="#initializerlist"><i class="fa fa-link" aria-hidden="true"></i></a><a href="https://zh.cppreference.com/w/cpp/utility/initializer_list" target="_blank">initializer_list</a></h1>
+<p><code>#include &lt;initializer_list&gt;</code></p>
 <pre><code class="lang-c++"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span>
 <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;vector&gt;</span></span>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;algorithm&gt;</span></span>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;numeric&gt;</span></span>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;future&gt;</span></span>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;string&gt;</span></span>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;mutex&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;initializer_list&gt;</span></span>
 
-<span class="hljs-built_in">std</span>::mutex m;
-<span class="hljs-keyword">struct</span> X {
-    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">foo</span><span class="hljs-params">(<span class="hljs-keyword">int</span> i, <span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; str)</span> </span>{
-        <span class="hljs-built_in">std</span>::lock_guard&lt;<span class="hljs-built_in">std</span>::mutex&gt; lk(m);
-        <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; str &lt;&lt; <span class="hljs-string">&apos; &apos;</span> &lt;&lt; i &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>;
+<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">class</span> T&gt;
+<span class="hljs-keyword">struct</span> S {
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;T&gt; v;
+    S(<span class="hljs-built_in">std</span>::<span class="hljs-built_in">initializer_list</span>&lt;T&gt; l) : v(l) {
+         <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">&quot;constructed with a &quot;</span> &lt;&lt; l.size() &lt;&lt; <span class="hljs-string">&quot;-element list\n&quot;</span>;
     }
-    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">bar</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; str)</span> </span>{
-        <span class="hljs-built_in">std</span>::lock_guard&lt;<span class="hljs-built_in">std</span>::mutex&gt; lk(m);
-        <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; str &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">append</span><span class="hljs-params">(<span class="hljs-built_in">std</span>::<span class="hljs-built_in">initializer_list</span>&lt;T&gt; l)</span> </span>{
+        v.insert(v.end(), l.begin(), l.end());
     }
-    <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">operator</span><span class="hljs-params">()</span><span class="hljs-params">(<span class="hljs-keyword">int</span> i)</span> </span>{
-        <span class="hljs-built_in">std</span>::lock_guard&lt;<span class="hljs-built_in">std</span>::mutex&gt; lk(m);
-        <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; i &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>;
-        <span class="hljs-keyword">return</span> i + <span class="hljs-number">10</span>;
+    <span class="hljs-built_in">std</span>::pair&lt;<span class="hljs-keyword">const</span> T*, <span class="hljs-built_in">std</span>::<span class="hljs-keyword">size_t</span>&gt; c_arr() <span class="hljs-keyword">const</span> {
+        <span class="hljs-keyword">return</span> {&amp;v[<span class="hljs-number">0</span>], v.size()};  <span class="hljs-comment">// &#x5728; return &#x8BED;&#x53E5;&#x4E2D;&#x590D;&#x5236;&#x5217;&#x8868;&#x521D;&#x59CB;&#x5316;</span>
+           <span class="hljs-comment">/*&#x8FD9;&#x91CC;&#x7684;&#x8FD4;&#x56DE;&#x503C;&#x4E0D;&#x80FD;&#x4F7F;&#x7528; std::initializer_list&#x3002;std::initializer_list &#x7684;&#x5185;&#x90E8;&#x5E76;&#x4E0D;&#x8D1F;&#x8D23;&#x4FDD;&#x5B58;&#x521D;&#x59CB;&#x5316;&#x5217;&#x8868;&#x4E2D;&#x5143;&#x7D20;&#x7684;&#x62F7;&#x8D1D;,&#x4EC5;&#x4EC5;&#x5B58;&#x50A8;&#x4E86;&#x5217;&#x8868;&#x4E2D;&#x5143;&#x7D20;&#x7684;&#x5F15;&#x7528;&#x800C;&#x5DF2;&#xFF0C;&#x56E0;&#x6B64;&#x9700;&#x8981;&#x518D;&#x6301;&#x6709;&#x5BF9;&#x8C61;&#x7684;&#x751F;&#x5B58;&#x5468;&#x671F;&#x4E4B;&#x524D;&#x4F20;&#x9012;&#x5B8C;&#x6BD5;*/</span>
     }
 };
 
-<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> RandomIt&gt;
-<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">parallel_sum</span><span class="hljs-params">(RandomIt beg, RandomIt end)</span>
-</span>{
-    <span class="hljs-keyword">auto</span> len = end - beg;
-    <span class="hljs-keyword">if</span> (len &lt; <span class="hljs-number">1000</span>)
-        <span class="hljs-keyword">return</span> <span class="hljs-built_in">std</span>::accumulate(beg, end, <span class="hljs-number">0</span>);
-
-    RandomIt mid = beg + len/<span class="hljs-number">2</span>;
-    <span class="hljs-keyword">auto</span> handle = <span class="hljs-built_in">std</span>::async(<span class="hljs-built_in">std</span>::launch::async,
-                             parallel_sum&lt;RandomIt&gt;, mid, end);
-    <span class="hljs-keyword">int</span> sum = parallel_sum(beg, mid);
-    <span class="hljs-keyword">return</span> sum + handle.get();
-}
+<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> T&gt;
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">templated_fn</span><span class="hljs-params">(T)</span> </span>{}
 
 <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
 </span>{
-    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; v(<span class="hljs-number">10000</span>, <span class="hljs-number">1</span>);
-    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">&quot;The sum is &quot;</span> &lt;&lt; parallel_sum(v.begin(), v.end()) &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>;
+    S&lt;<span class="hljs-keyword">int</span>&gt; s = {<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>, <span class="hljs-number">4</span>, <span class="hljs-number">5</span>}; <span class="hljs-comment">// &#x590D;&#x5236;&#x521D;&#x59CB;&#x5316;</span>
+    s.append({<span class="hljs-number">6</span>, <span class="hljs-number">7</span>, <span class="hljs-number">8</span>});      <span class="hljs-comment">// &#x51FD;&#x6570;&#x8C03;&#x7528;&#x4E2D;&#x7684;&#x5217;&#x8868;&#x521D;&#x59CB;&#x5316;</span>
 
-    X x;
-    <span class="hljs-comment">// &#x4EE5;&#x9ED8;&#x8BA4;&#x7B56;&#x7565;&#x8C03;&#x7528; x.foo(42, &quot;Hello&quot;) &#xFF1A;</span>
-    <span class="hljs-comment">// &#x53EF;&#x80FD;&#x540C;&#x65F6;&#x6253;&#x5370; &quot;Hello 42&quot; &#x6216;&#x5EF6;&#x8FDF;&#x6267;&#x884C;</span>
-    <span class="hljs-keyword">auto</span> a1 = <span class="hljs-built_in">std</span>::async(&amp;X::foo, &amp;x, <span class="hljs-number">42</span>, <span class="hljs-string">&quot;Hello&quot;</span>);
-    <span class="hljs-comment">// &#x4EE5; deferred &#x7B56;&#x7565;&#x8C03;&#x7528; x.bar(&quot;world!&quot;)</span>
-    <span class="hljs-comment">// &#x8C03;&#x7528; a2.get() &#x6216; a2.wait() &#x65F6;&#x6253;&#x5370; &quot;world!&quot;</span>
-    <span class="hljs-keyword">auto</span> a2 = <span class="hljs-built_in">std</span>::async(<span class="hljs-built_in">std</span>::launch::deferred, &amp;X::bar, x, <span class="hljs-string">&quot;world!&quot;</span>);
-    <span class="hljs-comment">// &#x4EE5; async &#x7B56;&#x7565;&#x8C03;&#x7528; X()(43) &#xFF1A;</span>
-    <span class="hljs-comment">// &#x540C;&#x65F6;&#x6253;&#x5370; &quot;43&quot;</span>
-    <span class="hljs-keyword">auto</span> a3 = <span class="hljs-built_in">std</span>::async(<span class="hljs-built_in">std</span>::launch::async, X(), <span class="hljs-number">43</span>);
-    a2.wait();                     <span class="hljs-comment">// &#x6253;&#x5370; &quot;world!&quot;</span>
-    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; a3.get() &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>; <span class="hljs-comment">// &#x6253;&#x5370; &quot;53&quot;</span>
-} <span class="hljs-comment">// &#x82E5; a1 &#x5728;&#x6B64;&#x70B9;&#x672A;&#x5B8C;&#x6210;&#xFF0C;&#x5219; a1 &#x7684;&#x6790;&#x6784;&#x51FD;&#x6570;&#x5728;&#x6B64;&#x6253;&#x5370; &quot;Hello 42&quot;</span>
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">&quot;The vector size is now &quot;</span> &lt;&lt; s.c_arr().second &lt;&lt; <span class="hljs-string">&quot; ints:\n&quot;</span>;
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">auto</span> n : s.v)
+        <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; n &lt;&lt; <span class="hljs-string">&apos; &apos;</span>;
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>;
+
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">&quot;Range-for over brace-init-list: \n&quot;</span>;
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> x : {<span class="hljs-number">-1</span>, <span class="hljs-number">-2</span>, <span class="hljs-number">-3</span>}) <span class="hljs-comment">// auto &#x7684;&#x89C4;&#x5219;&#x4EE4;&#x6B64;&#x5E26;&#x8303;&#x56F4; for &#x5DE5;&#x4F5C;</span>
+        <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; x &lt;&lt; <span class="hljs-string">&apos; &apos;</span>;
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>;
+
+    <span class="hljs-keyword">auto</span> al = {<span class="hljs-number">10</span>, <span class="hljs-number">11</span>, <span class="hljs-number">12</span>};   <span class="hljs-comment">// auto &#x7684;&#x7279;&#x6B8A;&#x89C4;&#x5219;&#xFF0C;&#x6B64;&#x65F6;a1&#x7684;&#x7C7B;&#x578B;&#x4E3A;std::initializer_list</span>
+
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">&quot;The list bound to auto has size() = &quot;</span> &lt;&lt; al.size() &lt;&lt; <span class="hljs-string">&apos;\n&apos;</span>;
+
+<span class="hljs-comment">//    templated_fn({1, 2, 3}); // &#x7F16;&#x8BD1;&#x9519;&#x8BEF;&#xFF01;&#x201C; {1, 2, 3} &#x201D;&#x4E0D;&#x662F;&#x8868;&#x8FBE;&#x5F0F;&#xFF0C;</span>
+                             <span class="hljs-comment">// &#x5B83;&#x65E0;&#x7C7B;&#x578B;&#xFF0C;&#x6545; T &#x65E0;&#x6CD5;&#x63A8;&#x5BFC;</span>
+    templated_fn&lt;<span class="hljs-built_in">std</span>::<span class="hljs-built_in">initializer_list</span>&lt;<span class="hljs-keyword">int</span>&gt;&gt;({<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>}); <span class="hljs-comment">// OK</span>
+    templated_fn&lt;<span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;<span class="hljs-keyword">int</span>&gt;&gt;({<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>});           <span class="hljs-comment">// &#x4E5F; OK</span>
+}
 </code></pre>
 <p>output:</p>
-<pre><code>The sum is 10000
-43
-world!
-53
-Hello 42
+<pre><code>constructed with a 5-element list
+The vector size is now 8 ints:
+1 2 3 4 5 6 7 8
+Range-for over brace-init-list: 
+-1 -2 -3 
+The list bound to auto has size() = 3
 </code></pre><footer class="page-footer"><span class="copyright">Copyright &#xA9; Ryou 2021 all right reserved&#xFF0C;powered by Gitbook</span><span class="footer-modification">&#x6700;&#x540E;&#x4FEE;&#x6539;&#x65F6;&#x95F4;&#xFF1A;
-2021-11-13 20:27:13
+2021-11-27 16:40:31
 </span></footer>
                                 
                                 </section>
@@ -712,7 +629,7 @@ Hello 42
 
             
                 
-                <a href="filesystem.html" class="navigation navigation-prev " aria-label="Previous page: filesystem">
+                <a href="future.html" class="navigation navigation-prev " aria-label="Previous page: future">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
@@ -728,7 +645,7 @@ Hello 42
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"future","level":"3.4.2","depth":2,"next":{"title":"Effective C++","level":"3.5","depth":1,"path":"Body/C&C++/Effective C++/Effective C++.md","ref":"Body/C&C++/Effective C++/Effective C++.md","articles":[]},"previous":{"title":"filesystem","level":"3.4.1","depth":2,"path":"Body/C&C++/组件/filesystem.md","ref":"Body/C&C++/组件/filesystem.md","articles":[]},"dir":"ltr"},"config":{"plugins":["code","-search","search-pro","github","splitter","tbfed-pagefooter","-sharing","sharing-plus","highlight","expandable-chapters","multipart","ancre-navigation","livereload"],"root":".","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"tbfed-pagefooter":{"copyright":"Copyright © Ryou 2021","modify_label":"最后修改时间：","modify_format":"YYYY-MM-DD HH:mm:ss"},"github":{"url":"https://github.com/YaNoHimawari"},"livereload":{},"splitter":{},"search-pro":{},"sharing-plus":{"qq":false,"all":["facebook","google","twitter","instapaper","linkedin","pocket","stumbleupon"],"douban":false,"facebook":true,"weibo":false,"instapaper":false,"whatsapp":false,"hatenaBookmark":false,"twitter":true,"messenger":false,"line":false,"vk":false,"pocket":true,"google":false,"viber":false,"stumbleupon":false,"qzone":false,"linkedin":false},"multipart":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"code":{"copyButtons":true},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"ancre-navigation":{"associatedWithSummary":true,"float":{"level1Icon":"","level2Icon":"","level3Icon":"","showLevelIcon":false},"mode":"float","multipleH1":true,"pageTop":{"level1Icon":"","level2Icon":"","level3Icon":"","showLevelIcon":false},"printLog":false,"showLevel":true},"sharing":{"facebook":false,"twitter":false,"qq":true,"weibo":true,"all":["douban","qzone"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false},"expandable-chapters":{}},"theme":"default","author":"Ryou","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"variables":{},"title":"Revery","language":"zh-hans","output.name":"site","gitbook":"3.2.3","description":"编程笔记"},"file":{"path":"Body/C&C++/组件/future.md","mtime":"2021-11-13T12:27:13.785Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-11-13T12:28:14.625Z"},"basePath":"../../..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"initializer_list","level":"3.4.4","depth":2,"next":{"title":"Effective C++","level":"3.5","depth":1,"path":"Body/C&C++/Effective C++/Effective C++.md","ref":"Body/C&C++/Effective C++/Effective C++.md","articles":[]},"previous":{"title":"future","level":"3.4.3","depth":2,"path":"Body/C&C++/STL/future.md","ref":"Body/C&C++/STL/future.md","articles":[]},"dir":"ltr"},"config":{"plugins":["code","-search","search-pro","github","splitter","tbfed-pagefooter","-sharing","sharing-plus","highlight","expandable-chapters","multipart","ancre-navigation"],"root":".","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"tbfed-pagefooter":{"copyright":"Copyright © Ryou 2021","modify_label":"最后修改时间：","modify_format":"YYYY-MM-DD HH:mm:ss"},"github":{"url":"https://github.com/YaNoHimawari"},"splitter":{},"search-pro":{},"sharing-plus":{"qq":false,"all":["facebook","google","twitter","instapaper","linkedin","pocket","stumbleupon"],"douban":false,"facebook":true,"weibo":false,"instapaper":false,"whatsapp":false,"hatenaBookmark":false,"twitter":true,"messenger":false,"line":false,"vk":false,"pocket":true,"google":false,"viber":false,"stumbleupon":false,"qzone":false,"linkedin":false},"multipart":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"code":{"copyButtons":true},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"ancre-navigation":{"associatedWithSummary":true,"float":{"level1Icon":"","level2Icon":"","level3Icon":"","showLevelIcon":false},"mode":"float","multipleH1":true,"pageTop":{"level1Icon":"","level2Icon":"","level3Icon":"","showLevelIcon":false},"printLog":false,"showLevel":true},"sharing":{"facebook":false,"twitter":false,"qq":true,"weibo":true,"all":["douban","qzone"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false},"expandable-chapters":{}},"theme":"default","author":"Ryou","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"variables":{},"title":"Revery","language":"zh-hans","output.name":"site","gitbook":"3.2.3","description":"编程笔记"},"file":{"path":"Body/C&C++/STL/initializer_list.md","mtime":"2021-11-27T08:40:31.931Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2021-11-27T08:57:02.420Z"},"basePath":"../../..","book":{"language":""}});
         });
     </script>
 </div>
@@ -763,10 +680,6 @@ Hello 42
     
         
         <script src="../../../gitbook/gitbook-plugin-expandable-chapters/expandable-chapters.js"></script>
-        
-    
-        
-        <script src="../../../gitbook/gitbook-plugin-livereload/plugin.js"></script>
         
     
         
